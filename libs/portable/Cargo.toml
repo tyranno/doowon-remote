@@ -28,6 +28,7 @@ native-windows-gui = {version = "1.0", default-features = false, features = ["an
 
 [package.metadata.winres]
 LegalCopyright = "두원전자통신 · RustDesk 기반 (AGPL-3.0, Copyright © 2026 Purslane Tech Pte. Ltd.)"
+CompanyName = "두원전자통신"
 ProductName = "두원전자통신 원격지원"
 OriginalFilename = "DoowonRemote.exe"
 FileDescription = "두원전자통신 원격지원"
