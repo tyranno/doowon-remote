@@ -2506,7 +2506,36 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
+// 두원 원격지원: 받기 전용 · 고객 수락 필수 · 자체 서버. 서버 값은 빌드 시 환경변수로 넣고,
+// 실행 파일 이름(host=...,key=...)이 있으면 그쪽이 우선한다.
+fn apply_doowon_brand() {
+    *config::APP_NAME.write().unwrap() = "DoowonRemote".to_owned();
+    let mut hard = config::HARD_SETTINGS.write().unwrap();
+    for (k, v) in [
+        ("conn-type", "incoming"),
+        ("disable-settings", "Y"),
+        ("disable-installation", "Y"),
+        ("disable-account", "Y"),
+        ("disable-ab", "Y"),
+    ] {
+        hard.insert(k.to_owned(), v.to_owned());
+    }
+    drop(hard);
+    let mut ow = config::OVERWRITE_SETTINGS.write().unwrap();
+    ow.insert("approve-mode".to_owned(), "click".to_owned());
+    for (k, v) in [
+        ("custom-rendezvous-server", option_env!("DOOWON_SERVER")),
+        ("key", option_env!("DOOWON_KEY")),
+        ("api-server", option_env!("DOOWON_API")),
+    ] {
+        if let Some(v) = v.filter(|v| !v.is_empty()) {
+            ow.insert(k.to_owned(), v.to_owned());
+        }
+    }
+}
+
 pub fn load_custom_client() {
+    apply_doowon_brand();
     #[cfg(debug_assertions)]
     if let Ok(data) = std::fs::read_to_string("./custom.txt") {
         read_custom_client(data.trim());
