@@ -21,6 +21,7 @@ import '../../common/widgets/chat_page.dart';
 import '../../models/file_model.dart';
 import '../../models/platform_model.dart';
 import '../../models/server_model.dart';
+import '../../doowon/doowon.dart';
 
 /// Set only by this window's own close control, and only once the user has confirmed. Any other
 /// way the window can go - a session logout closing every window, the window manager, a native
@@ -95,7 +96,7 @@ class _DesktopServerPageState extends State<DesktopServerPage>
         builder: (context, serverModel, child) {
           final body = Scaffold(
             backgroundColor: Theme.of(context).colorScheme.background,
-            body: ConnectionManager(),
+            body: isDoowon ? const DoowonCmView() : ConnectionManager(),
           );
           return isLinux
               ? buildVirtualWindowFrame(context, body)

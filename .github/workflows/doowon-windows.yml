@@ -1,6 +1,6 @@
 name: 두원 원격지원 Windows 빌드
 
-# 고객용 포터블 exe(DoowonRemote.exe)만 만든다. 서버 값은 저장소 Variables:
+# 고객용(DoowonRemote.exe)과 상담원용(DoowonAgent.exe) 포터블 exe를 함께 만든다. 서버 값은 저장소 Variables:
 #   DOOWON_SERVER (예: support.example.synology.me), DOOWON_KEY (hbbs 공개키), DOOWON_API (선택)
 on:
   workflow_dispatch:
@@ -24,6 +24,16 @@ jobs:
   build:
     needs: [generate-bridge]
     runs-on: windows-2022
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - role: customer
+            exe: DoowonRemote
+          - role: agent
+            exe: DoowonAgent
+    env:
+      DOOWON_ROLE: ${{ matrix.role }}
     steps:
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
@@ -54,6 +64,12 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           architecture: x64
 
+      - name: Analyze Doowon UI (fail fast)
+        working-directory: flutter
+        run: |
+          flutter pub get
+          dart analyze --no-fatal-warnings lib/doowon lib/main.dart lib/common.dart lib/desktop/pages/server_page.dart lib/desktop/pages/desktop_home_page.dart lib/desktop/pages/desktop_tab_page.dart
+
       - name: Replace engine with rustdesk custom flutter engine
         run: |
           flutter precache --windows
@@ -77,7 +93,7 @@ jobs:
 
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          prefix-key: doowon-windows-2022
+          prefix-key: doowon-windows-2022-${{ matrix.role }}
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@b1a0dd252f06b9e25b3c022a9a03bd7a427fb6a2 # v11
@@ -96,7 +112,7 @@ jobs:
         run: |
           python3 .\build.py --portable --flutter --skip-portable-pack --hwcodec --vram
           mv ./flutter/build/windows/x64/runner/Release ./rustdesk
-          mv ./rustdesk/rustdesk.exe ./rustdesk/DoowonRemote.exe
+          mv ./rustdesk/rustdesk.exe ./rustdesk/${{ matrix.exe }}.exe
 
       - name: Pack portable exe
         shell: bash
@@ -104,14 +120,14 @@ jobs:
           sed -i '/dpiAware/d' res/manifest.xml
           pushd ./libs/portable
           pip3 install -r requirements.txt
-          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/DoowonRemote.exe
+          python3 ./generate.py -f ../../rustdesk/ -o . -e ../../rustdesk/${{ matrix.exe }}.exe
           popd
           mkdir -p out
-          mv ./target/release/rustdesk-portable-packer.exe ./out/DoowonRemote.exe
-          sha256sum out/DoowonRemote.exe
+          mv ./target/release/rustdesk-portable-packer.exe ./out/${{ matrix.exe }}.exe
+          sha256sum out/${{ matrix.exe }}.exe
 
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: doowon-remote-windows-x64
-          path: out/DoowonRemote.exe
+          name: doowon-${{ matrix.role }}-windows-x64
+          path: out/${{ matrix.exe }}.exe
           if-no-files-found: error

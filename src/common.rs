@@ -2506,13 +2506,15 @@ pub fn rustdesk_interval(i: Interval) -> ThrottledInterval {
     ThrottledInterval::new(i)
 }
 
-// 두원 원격지원: 받기 전용 · 고객 수락 필수 · 자체 서버. 서버 값은 빌드 시 환경변수로 넣고,
-// 실행 파일 이름(host=...,key=...)이 있으면 그쪽이 우선한다.
+// 두원 원격지원. DOOWON_ROLE=agent 로 빌드하면 상담원용(보내기 전용, doowonagent:// 링크 처리),
+// 그 외에는 고객용(받기 전용, 고객 수락 필수). 서버 값은 빌드 시 환경변수로 넣는다.
 fn apply_doowon_brand() {
-    *config::APP_NAME.write().unwrap() = "DoowonRemote".to_owned();
+    let agent = option_env!("DOOWON_ROLE") == Some("agent");
+    *config::APP_NAME.write().unwrap() =
+        if agent { "DoowonAgent" } else { "DoowonRemote" }.to_owned();
     let mut hard = config::HARD_SETTINGS.write().unwrap();
     for (k, v) in [
-        ("conn-type", "incoming"),
+        ("conn-type", if agent { "outgoing" } else { "incoming" }),
         ("disable-settings", "Y"),
         ("disable-installation", "Y"),
         ("disable-account", "Y"),
@@ -2523,7 +2525,9 @@ fn apply_doowon_brand() {
     }
     drop(hard);
     let mut ow = config::OVERWRITE_SETTINGS.write().unwrap();
-    ow.insert("approve-mode".to_owned(), "click".to_owned());
+    if !agent {
+        ow.insert("approve-mode".to_owned(), "click".to_owned());
+    }
     for (k, v) in [
         ("custom-rendezvous-server", option_env!("DOOWON_SERVER")),
         ("key", option_env!("DOOWON_KEY")),
@@ -2532,6 +2536,29 @@ fn apply_doowon_brand() {
         if let Some(v) = v.filter(|v| !v.is_empty()) {
             ow.insert(k.to_owned(), v.to_owned());
         }
+    }
+    drop(ow);
+    #[cfg(windows)]
+    if agent {
+        register_doowon_agent_scheme();
+    }
+}
+
+// 설치 없이 쓰는 포터블이라 실행할 때마다 현재 사용자 레지스트리에 링크 처리기를 등록한다.
+#[cfg(windows)]
+fn register_doowon_agent_scheme() {
+    use winreg::{enums::HKEY_CURRENT_USER, RegKey};
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+    let Ok((key, _)) = hkcu.create_subkey(r"Software\Classes\doowonagent") else {
+        return;
+    };
+    let _ = key.set_value("", &"URL:DoowonAgent");
+    let _ = key.set_value("URL Protocol", &"");
+    if let Ok((cmd, _)) = key.create_subkey(r"shell\open\command") {
+        let _ = cmd.set_value("", &format!("\"{}\" \"%1\"", exe.display()));
     }
 }
 
