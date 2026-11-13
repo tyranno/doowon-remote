@@ -90,8 +90,8 @@ class _DesktopHomePageState extends State<DesktopHomePage>
         child: loadLogo(),
       ),
       buildTip(context),
-      if (!isOutgoingOnly) buildIDBoard(context),
-      if (!isOutgoingOnly) buildPasswordBoard(context),
+      // 두원 원격지원: ID/비밀번호 칸은 상담원이 보지 않고(웹 대기 목록에서 자동 접속)
+      // 고객도 몰라도 되므로 숨긴다. 일반적인 러스트데스크 창처럼 보이는 것도 피한다.
       FutureBuilder<Widget>(
         future: Future.value(
             Obx(() => buildHelpCards(stateGlobal.updateUrl.value))),
@@ -401,7 +401,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    translate("Your Desktop"),
+                    "두원전자통신 원격지원",
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
@@ -412,7 +412,7 @@ class _DesktopHomePageState extends State<DesktopHomePage>
           ),
           if (!isOutgoingOnly)
             Text(
-              translate("desk_tip"),
+              "상담원이 연결을 요청하면 화면에 수락 버튼이 나타납니다.",
               overflow: TextOverflow.clip,
               style: Theme.of(context).textTheme.bodySmall,
             ),

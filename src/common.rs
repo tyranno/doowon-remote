@@ -2517,6 +2517,7 @@ fn apply_doowon_brand() {
         ("disable-installation", "Y"),
         ("disable-account", "Y"),
         ("disable-ab", "Y"),
+        ("hide-powered-by-me", "Y"),
     ] {
         hard.insert(k.to_owned(), v.to_owned());
     }
