@@ -136,11 +136,16 @@ class DoowonCustomerHome extends StatefulWidget {
 class _DoowonCustomerHomeState extends State<DoowonCustomerHome> {
   Timer? _timer;
   _CustomerState _state = _CustomerState.connecting;
+  String _pcName = '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => doowonFitMainWindow());
+    try {
+      final info = jsonDecode(bind.mainGetLoginDeviceInfo());
+      _pcName = (info['name'] as String?) ?? '';
+    } catch (_) {}
     _timer = periodic_immediate(const Duration(seconds: 1), _poll);
   }
 
@@ -239,11 +244,13 @@ class _DoowonCustomerHomeState extends State<DoowonCustomerHome> {
                 ]),
               ),
               const Spacer(),
-              Text('이 PC: ${Platform.localHostname}',
-                  style: const TextStyle(fontSize: 12, color: kDoowonSub)),
-              const SizedBox(height: 4),
-              const Text('문의 시 상담원에게 위 PC 이름을 알려 주세요.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF8A96A0))),
+              if (_pcName.isNotEmpty) ...[
+                Text('이 PC: $_pcName',
+                    style: const TextStyle(fontSize: 12, color: kDoowonSub)),
+                const SizedBox(height: 4),
+                const Text('문의 시 상담원에게 위 PC 이름을 알려 주세요.',
+                    style: TextStyle(fontSize: 11, color: Color(0xFF8A96A0))),
+              ],
             ]),
           ),
         ),
