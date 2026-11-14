@@ -119,7 +119,6 @@ Future<void> doowonFitMainWindow() async {
   final size = isDoowonAgent ? kDoowonAgentSize : kDoowonCustomerSize;
   await windowManager.setSize(size);
   await windowManager.setResizable(false);
-  await windowManager.setTitle(kDoowonTitle);
 }
 
 enum _CustomerState { connecting, waiting, inSession }

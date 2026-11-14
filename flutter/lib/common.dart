@@ -3062,9 +3062,10 @@ int versionCmp(String v1, String v2) {
 
 String getWindowName({WindowType? overrideType}) {
   final name = bind.mainGetAppNameSync();
-  if (name.startsWith('Doowon')) {
-    final t = overrideType ?? kWindowType;
-    return t == WindowType.Main ? '두원전자통신 원격지원' : '원격 화면 - 두원전자통신 원격지원';
+  // 메인 창 제목은 앱 이름 그대로 둔다: Windows에서 링크를 기존 실행 중인 창에 넘길 때 제목으로 찾는다.
+  final t = overrideType ?? kWindowType;
+  if (name.startsWith('Doowon') && t != null && t != WindowType.Main) {
+    return '원격 화면 - 두원전자통신 원격지원';
   }
   switch (overrideType ?? kWindowType) {
     case WindowType.Main:
